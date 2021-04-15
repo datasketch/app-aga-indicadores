@@ -1,13 +1,13 @@
 "Entidades que participan en el cumplimiento de recomendaciones AGA": 
-  - entidad
-  - completitud
+  - "Entidades responsables"
+  - percentage_of
+  - percentage
 "Proceso de evaluación AGA":
-  - compromiso
-  - sector
+  - nombre_compromiso
   - completitud
 "Cronograma de actividades por compromiso":
-  - compromiso
+  - nombre_compromiso
   - actividad
   - fecha_inicio
-  - fecha_fin_plan
+  - fecha_fin
   - completitud
