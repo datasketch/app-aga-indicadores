@@ -6,16 +6,12 @@
 #   tener el mismo n_distinct -- no lo tienen: 25 - 24; esto se 
 #   puede deber a que hay una actividad repetida, es decir, debería
 #   haber una actividad por registro pero hay una repetida
-#   - ¿Calcular la columna completitud? ¿Cómo? Si entiendo bien, queremos contrastar
-#   esto que sería la "Expectativa" y la "Realidad" que lo reporta cada entidad: ¿de dónde
-#   se saca estos datos?
 # + Para la primera gráfica hay varias actividades por entidad,
 # es decir, varios valores de "completitud" ¿cuál tomar? ¿el promedio?
 # + ¿En cuál panel ponerl el filtro de los compromisos (burbújas y gntt)?
 # + ¿Las actividades por compromiso (gntt) se colorean? El filtro
 # de esto podría también tener una opción de "Todos" y mostrar
 # todos los compromisos al tiempo ¿sí?
-# + ¿Descargar visualización?
 
 # PPED
 # + ¿Nombre repositorio? ¿Privado? app-aga-indicadores público
