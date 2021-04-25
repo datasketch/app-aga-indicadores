@@ -27,7 +27,8 @@
 
 # --  MAE
 # + Halar datos google sheetss
-
+# + Que el filtro de las entidades sirva ... gráfica de proceso de actividades por compromiso de cada entidad
+# se podría poner unos radio botones para escoger que se vea por actividad o compromiso.
 
 
 # ----- DAT

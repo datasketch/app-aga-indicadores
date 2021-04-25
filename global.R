@@ -3,6 +3,9 @@ clean_data <- function (d) {
   d0 <- d
   # Quitando porcentajes
   d0$completitud <- as.numeric(gsub("%", "", d0$completitud))
+  d0$completitud <- d0$completitud * 100
+  d0$fecha_inicio <- as.Date(d0$fecha_inicio)
+  d0$fecha_fin <- as.Date(d0$fecha_fin)
   
   # Calculando columna "expectativa" (porcentaje de días con respescto a la
   # fecha final que han transcurrido)

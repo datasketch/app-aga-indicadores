@@ -4,9 +4,11 @@ library(dsmodules)
 library(shinydisconnect)
 library(shinycustomloader)
 library(shinybusy)
+library(googlesheets4)
 
 
 
+webshot::install_phantomjs()
 ui <- panelsPage(styles = "/* estílos radiobotones */
                              #mediciones label input {
                                display: none;
@@ -83,19 +85,28 @@ ui <- panelsPage(styles = "/* estílos radiobotones */
                        # color = "#804e49",
                        color = "#b5ac9b",
                        body = list(conditionalPanel("input.mediciones != 'm1'", 
-                                                    div(style = "display: flex; width: 34rem;", 
-                                                        uiOutput("select_text", style = "margin-right: 20px;"),
-                                                        selectizeInput("select", "", ""))),
+                                                    div(style = "display: flex;",
+                                                        div(style = "display: flex; width: 34rem;", 
+                                                            uiOutput("select_text", style = "margin-right: 20px;"),
+                                                            selectizeInput("select", "", "", width = "500px")),
+                                                        conditionalPanel("input.mediciones == 'm0' & input.select != 'Todas'",
+                                                                         style = "margin: 1rem 5rem;",
+                                                                         radioButtons("compromiso_actividad","", c("Compromiso", "Acividad"), inline = TRUE)))),
                                    uiOutput("viz_titulo"),
                                    withLoader(highchartOutput("viz", height = "80vh"), type = "image", loader = "img/loading_gris.gif"))))
 
 
 
-
-# halar de google
+# cargando función que limpia-prepara los datos
 source("global.R")
-# b0 <- read_csv("data/data.csv")
-a0 <- read_csv("data/Plantilla seguimiento compromisos IV Plan - Hoja 1.csv") %>% clean_data()
+# halar de google
+gs4_deauth()
+ss <- "https://docs.google.com/spreadsheets/d/1OhzipA7dgpINjnDXdbsoGFWvL0rwsLKjP2GwizC8dOI/edit?ts=6074aa97#gid=0"
+a0 <- read_sheet(ss, 2) %>% 
+  filter(!is.na(actividad)) %>%
+  clean_data()
+
+# a0 <- read_csv("data/Plantilla seguimiento compromisos IV Plan - Hoja 1.csv") %>% clean_data()
 
 server <- function (input, output, session) {
   
@@ -112,23 +123,41 @@ server <- function (input, output, session) {
              m2 = "Compromiso:")[[input$mediciones]])
   })
   
+  
   # visualización
   viz <- reactive({
     if (input$mediciones == "m0") {
       dt <- a0
-      # if (input$select != "Todas") dt <- dt[dt$`entidades responsables` %in% input$select, ]
-      dt <- dt[, c("entidades responsables", "completitud", "expectativa")] %>% 
-        setNames(c("Entidad", "Realidad", "Expectativa")) %>%
-        pivot_longer(c(Realidad, Expectativa), "percentage_of", values_to = "Percentage")
+      if (input$select != "Todas") {
+        dt <- dt[dt$`entidades responsables` %in% input$select, ] 
+        if (input$compromiso_actividad == "Compromiso") {
+          dt <- dt[, c("nombre_compromiso", "completitud", "expectativa")] %>%
+            setNames(c("Compromiso", "Realidad", "Expectativa")) 
+          vl <- "Compromiso"
+        } else {
+          dt <- dt[, c("actividad", "completitud", "expectativa")] %>%
+            setNames(c("Actividad", "Realidad", "Expectativa"))
+          vl <- "Actividad"
+        }
+        dt <- dt %>%
+          pivot_longer(c(Realidad, Expectativa), "percentage_of", values_to = "Percentage") %>%
+          select(2, 1, 3)
+      } else {
+        dt <- dt[, c("entidades responsables", "completitud", "expectativa")] %>% 
+          setNames(c("Entidad", "Realidad", "Expectativa")) %>%
+          pivot_longer(c(Realidad, Expectativa), "percentage_of", values_to = "Percentage") %>%
+          select(2, 1, 3)
+        vl <- "Entidad"
+      }
       
-      hgch_bar_CatCatNum(dt[, c(2, 1, 3)],
+      hgch_bar_CatCatNum(dt,
                          # palette_colors = c("#b5ac9b", "#87ad5d"),
                          # palette_colors = c("#87ad5d", "#b5ac9b"),
                          # palette_colors = c("#698f3f", "#b5ac9b"),
                          palette_colors = c("#c6d5c7", "#7a897b"),
                          sort = TRUE,
                          hor_title = "",
-                         ver_title = "Entidad",
+                         ver_title = vl,
                          agg = "mean",
                          # order = c("Realidad", "Expectativa"),
                          # color_by = names(tb)[1],
@@ -194,7 +223,7 @@ server <- function (input, output, session) {
         hc_tooltip(useHTML = TRUE, 
                    # dateTimeLabelsFormat = "%Y %B",
                    # headerFormat = "{point.x}",
-                   pointFormat = paste0("<br/><b> Compromiso: </b>", "input$select", "<br/><b> Actividad: </b> {point.actividad} <br/><b> Completitud: </b> {point.cm}% <br/>"),
+                   pointFormat = paste0("<br/><b> Compromiso: </b>", input$select, "<br/><b> Actividad: </b> {point.actividad} <br/><b> Completitud: </b> {point.cm}% <br/>"),
                    style = list(fontSize = "13px")) %>%
         hc_colors("#c6d5c7") %>% #d7ddd1
         hc_xAxis(title = "", type = "datetime") %>%
