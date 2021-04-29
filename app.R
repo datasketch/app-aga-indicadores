@@ -28,16 +28,27 @@ ui <- panelsPage(styles = "/* estílos radiobotones */
                              #mediciones label input:checked + span {
                                background-color: #87ad5d;
                                background-color: #d7ddd1;
-                               //border-color: #d51317;
-                               //color: #ffffff;
+                               background-color: #22666747;
+                               background-color: #81d75f;
+                               background-color: #226667a8;
+                               background-color: #d06653;
+                               background-color: #ff5331;
+                               border-color: transparent;
+                               color: #ffffff;
+                               //color: #000; 
+                               font-weight: 400;
                              }
                              .btn,
                              .dropdown-action-trigger {
                                //background: #cfbe8d !important;     
                                background: #b5ac9d !important;     
                                background: #b5ac9dc9 !important;     
-                               //color: #6d7179;
+                               background: #f0c324 !important;
+                               background: #d06653 !important;
+                               background: transparent !important;
+                               border: 2px solid #8790a0;
                                color: #494444;
+                               # color: #fff;
                              }
                              .style_section {
                                color: #804e49;
@@ -69,7 +80,8 @@ ui <- panelsPage(styles = "/* estílos radiobotones */
                  panel(title = "Mediciones",
                        width = 310,
                        # color = "#804e49",
-                       color = "#b5ac9b",
+                       # color = "#b5ac9b",
+                       color = "#f0c324",
                        body = radioButtons("mediciones", "", c("m0", "m1", "m2") %>% setNames(c("Entidades que participan en el cumplimiento de recomendaciones AGA y su completitud",
                                                                                                 "Compromisos y su completitud",
                                                                                                 "Cronograma de actividades por compromiso"))),
@@ -83,7 +95,8 @@ ui <- panelsPage(styles = "/* estílos radiobotones */
                                                       dropdownWidth = 239),
                        can_collapse = FALSE,
                        # color = "#804e49",
-                       color = "#b5ac9b",
+                       # color = "#b5ac9b",
+                       color = "#f0c324",
                        body = list(conditionalPanel("input.mediciones != 'm1'", 
                                                     div(style = "display: flex;",
                                                         div(style = "display: flex; width: 34rem;", 
@@ -93,7 +106,10 @@ ui <- panelsPage(styles = "/* estílos radiobotones */
                                                                          style = "margin: 1rem 5rem;",
                                                                          radioButtons("compromiso_actividad","", c("Compromiso", "Acividad"), inline = TRUE)))),
                                    uiOutput("viz_titulo"),
-                                   withLoader(highchartOutput("viz", height = "80vh"), type = "image", loader = "img/loading_gris.gif"))))
+                                   withLoader(highchartOutput("viz", height = "80vh"), type = "image", loader = "img/loading_gris.gif")),
+                       footer = a(href = "https://www.datasketch.co", 
+                                  target = "blank", 
+                                  img(src = "img/ds_logo.png", width = "200", height = "150", align = "right"))))
 
 
 
@@ -154,7 +170,10 @@ server <- function (input, output, session) {
                          # palette_colors = c("#b5ac9b", "#87ad5d"),
                          # palette_colors = c("#87ad5d", "#b5ac9b"),
                          # palette_colors = c("#698f3f", "#b5ac9b"),
-                         palette_colors = c("#c6d5c7", "#7a897b"),
+                         # palette_colors = c("#c6d5c7", "#7a897b"),
+                         palette_colors = c("#006667", "#ffd200"),
+                         # palette_colors = c("#ff9a00", "#ff5331"),
+                         
                          sort = TRUE,
                          hor_title = "",
                          ver_title = vl,
@@ -178,7 +197,8 @@ server <- function (input, output, session) {
       
       hgch_bubbles_CatNum(dt,
                           # palette_colors = c("#ff0000", "#ffcc00", "#ffff00", "#d6ff00", "#bbff00", "#0dff00"),
-                          palette_colors = c("#7a897b", "#c6d5c7"),
+                          # palette_colors = c("#7a897b", "#c6d5c7"),
+                          palette_colors = c("#006667", "#ffd200"),
                           agg = "mean",
                           color_by = "Completado",
                           label_wrap = 70,
@@ -209,7 +229,9 @@ server <- function (input, output, session) {
       #   hc_yAxis(categories = c("Protyping", "Dev", "Testing"))
       req(input$select)
       dt <- a0[a0$nombre_compromiso %in% input$select, c("fecha_inicio", "fecha_fin", "actividad", "completitud")] 
-      dt <- dt[!duplicated(dt), ] 
+      dt <- dt[!duplicated(dt), ] %>%
+        group_by()
+      assign("dt", dt, envir = globalenv())
       dt <- dt %>%
         mutate(fecha_inicio = datetime_to_timestamp(fecha_inicio),
                fecha_fin = datetime_to_timestamp(fecha_fin),
@@ -225,7 +247,9 @@ server <- function (input, output, session) {
                    # headerFormat = "{point.x}",
                    pointFormat = paste0("<br/><b> Compromiso: </b>", input$select, "<br/><b> Actividad: </b> {point.actividad} <br/><b> Completitud: </b> {point.cm}% <br/>"),
                    style = list(fontSize = "13px")) %>%
-        hc_colors("#c6d5c7") %>% #d7ddd1
+        # hc_colors("#c6d5c7") %>% #d7ddd1
+        hc_colors("#ffd200") %>%
+        # hc_colors("#006667") %>%
         hc_xAxis(title = "", type = "datetime") %>%
         hc_yAxis(title = "", categories = gsub("\\\n", "<br/>", stringr::str_wrap(dt$actividad, 50)))
     }
