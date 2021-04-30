@@ -106,7 +106,7 @@ ui <- panelsPage(styles = "/* estílos radiobotones */
                                                                          style = "margin: 1rem 5rem;",
                                                                          radioButtons("compromiso_actividad","", c("Compromiso", "Acividad"), inline = TRUE)))),
                                    uiOutput("viz_titulo"),
-                                   withLoader(highchartOutput("viz", height = "80vh"), type = "image", loader = "img/loading_gris.gif")),
+                                   withLoader(highchartOutput("viz", height = "69vh"), type = "image", loader = "img/loading_gris.gif")),
                        footer = a(href = "https://www.datasketch.co", 
                                   target = "blank", 
                                   img(src = "img/ds_logo.png", width = "200", height = "150", align = "right"))))
@@ -155,17 +155,25 @@ server <- function (input, output, session) {
             setNames(c("Actividad", "Realidad", "Expectativa"))
           vl <- "Actividad"
         }
+        lw <- dt[[vl]] %>% map_int(~nchar(.x)) %>% unique() %>% max() 
+        lw <- ifelse(lw >= 250, 170, 40)
         dt <- dt %>%
           pivot_longer(c(Realidad, Expectativa), "percentage_of", values_to = "Percentage") %>%
           select(2, 1, 3)
-      } else {
+        tl <- paste0("'<b>' + this.series.name + '<br/> Entidad: </b>",
+                     input$select,
+                     "<br/><b>",
+                     vl,
+                     ": </b>' + this.x + '<br/><b>Completitud: </b>' + this.point.y + '%';}")
+        } else {
         dt <- dt[, c("entidades responsables", "completitud", "expectativa")] %>% 
           setNames(c("Entidad", "Realidad", "Expectativa")) %>%
           pivot_longer(c(Realidad, Expectativa), "percentage_of", values_to = "Percentage") %>%
           select(2, 1, 3)
         vl <- "Entidad"
-      }
-      
+        lw <- 40
+        tl <- " '<b>' + this.series.name + '<br/> Entidad: </b>' + this.x + '<br/><b>Completitud: </b>' + this.point.y + '%'}"
+        }
       hgch_bar_CatCatNum(dt,
                          # palette_colors = c("#b5ac9b", "#87ad5d"),
                          # palette_colors = c("#87ad5d", "#b5ac9b"),
@@ -177,11 +185,11 @@ server <- function (input, output, session) {
                          sort = TRUE,
                          hor_title = "",
                          ver_title = vl,
+                         label_wrap = lw,
                          agg = "mean",
                          # order = c("Realidad", "Expectativa"),
                          # color_by = names(tb)[1],
                          format_sample_num = "123.",
-                         label_wrap = 40,
                          orientation = "hor",
                          dataLabels_show = TRUE,
                          # dataLabels_size = 13,
@@ -189,7 +197,8 @@ server <- function (input, output, session) {
                          style = list(suffix = " %")) %>%
         hc_yAxis(min = 0, max = 100, title = "") %>%
         hc_tooltip(useHTML = TRUE,
-                   formatter = JS("function () {return '<b>' + this.series.name + '<br/> Entidad: </b>' + this.x + '<br/><b>Completitud: </b>' + this.point.y + '%'}"),
+                   # formatter = JS("function () {return '<b>' + this.series.name + '<br/> Entidad: </b>' + this.x + '<br/><b>Completitud: </b>' + this.point.y + '%'}"),
+                   formatter = JS(paste0("function () {return ", tl)),
                    style = list(fontSize = "13px"))
     } else if (input$mediciones == "m1") {
       dt <- a0[, c("nombre_compromiso", "completitud")] %>%
@@ -229,9 +238,13 @@ server <- function (input, output, session) {
       #   hc_yAxis(categories = c("Protyping", "Dev", "Testing"))
       req(input$select)
       dt <- a0[a0$nombre_compromiso %in% input$select, c("fecha_inicio", "fecha_fin", "actividad", "completitud")] 
+      dt <- dt[!duplicated(dt), ]
       dt <- dt[!duplicated(dt), ] %>%
-        group_by()
-      assign("dt", dt, envir = globalenv())
+        group_by(actividad) %>%
+        summarise(fecha_inicio = min(fecha_inicio, na.rm = TRUE),
+                  fecha_fin = max(fecha_fin, na.rm = TRUE),
+                  completitud = mean(completitud, na.rm = TRUE)) %>%
+        arrange(desc(actividad))
       dt <- dt %>%
         mutate(fecha_inicio = datetime_to_timestamp(fecha_inicio),
                fecha_fin = datetime_to_timestamp(fecha_fin),
@@ -251,7 +264,10 @@ server <- function (input, output, session) {
         hc_colors("#ffd200") %>%
         # hc_colors("#006667") %>%
         hc_xAxis(title = "", type = "datetime") %>%
-        hc_yAxis(title = "", categories = gsub("\\\n", "<br/>", stringr::str_wrap(dt$actividad, 50)))
+        hc_yAxis(title = "", categories = gsub("\\\n", "<br/>", stringr::str_wrap(dt$actividad, 50))) %>%
+        hc_caption(align = "right",
+                   style = list(color = "#7e392b"),
+                   text = HTML("**Para las actividades que se realizarán y han realizado en distintos períodos,se está tomando la fecha más antigua <br/>y más futura y el promedio de las completitudes."))
     }
   })
   
